@@ -11,6 +11,7 @@ const server = http.createServer(app);
 const io = socketIo(server);
 app.use(cors());
 
+
 // Constants for pixel positions (example values, adjust based on game resolution)
 const PIXEL_POSITIONS = [
     { x: 100, y: 700 }, // Example pixel positions for health bar
@@ -89,7 +90,8 @@ function isColorMatch(r, g, b, threshold, tolerance = 10) {
 }
 
 // Start the server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+const PORT = process.env.PORT || 10000;
+const HOST = '0.0.0.0';
+server.listen(PORT, HOST, () => {
     console.log(`Server running on port ${PORT}`);
 });
