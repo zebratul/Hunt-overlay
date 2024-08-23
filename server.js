@@ -12,9 +12,9 @@ app.use(cors());
 
 // Constants for pixel positions (A, B, C)
 const PIXEL_POSITIONS = [
-    { x: 5, y: 0 },   // Pixel A (leftmost pixel)
+    { x: 30, y: 0 },   // Pixel A (leftmost pixel)
     { x: 370, y: 0 }, // Pixel B (middle pixel)
-    { x: 650, y: 0 }  // Pixel C (rightmost pixel)
+    { x: 670, y: 0 }  // Pixel C (rightmost pixel)
 ];
 
 // Thresholds for color analysis
@@ -47,6 +47,8 @@ app.post('/analyze', async (req, res) => {
             b: buffer[2]
         }));
 
+        console.log('pixelData', pixelData );
+        
         const healthState = determineHealthState(pixelData);
 
         if (healthState !== currentHealthState) {
