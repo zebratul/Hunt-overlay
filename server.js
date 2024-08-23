@@ -47,8 +47,6 @@ app.post('/analyze', async (req, res) => {
             b: buffer[2]
         }));
 
-        console.log('pixelData', pixelData); // Log the RGB values for troubleshooting
-
         const healthState = determineHealthState(pixelData);
 
         if (healthState !== currentHealthState) {
