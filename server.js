@@ -10,7 +10,6 @@ const server = http.createServer(app);
 const io = socketIo(server);
 app.use(cors());
 
-
 // Constants for pixel positions (A, B, C)
 const PIXEL_POSITIONS = [
     { x: 5, y: 0 },   // Pixel A (leftmost pixel)
@@ -19,8 +18,8 @@ const PIXEL_POSITIONS = [
 ];
 
 // Thresholds for color analysis
-const RED_THRESHOLD = { r: 0, g: 0, b: 100 }; // Example: red color for full health
-const BLACK_THRESHOLD = { r: 8, g: 8, b: 8 }; // Example: black color for no health
+const RED_THRESHOLD = { r: 175, g: 0, b: 0 }; // Example: red color for full health
+const BLACK_THRESHOLD = { r: 4, g: 5, b: 5 }; // Example: black color for no health
 
 let currentHealthState = 'FULL';
 
@@ -39,11 +38,19 @@ app.post('/analyze', async (req, res) => {
                 .toBuffer()
         );
 
-        const pixelData = await Promise.all(pixelPromises);
+        const pixelBuffers = await Promise.all(pixelPromises);
+
+        // Convert Buffer data to RGB values
+        const pixelData = pixelBuffers.map(buffer => ({
+            r: buffer[0],
+            g: buffer[1],
+            b: buffer[2]
+        }));
+
+        console.log('pixelData', pixelData); // Log the RGB values for troubleshooting
 
         const healthState = determineHealthState(pixelData);
-        console.log('pixelData', pixelData);
-    
+
         if (healthState !== currentHealthState) {
             currentHealthState = healthState;
             console.log('Health State Updated:', { healthState });
@@ -62,11 +69,7 @@ app.post('/analyze', async (req, res) => {
 // Function to determine the current health state based on pixel colors
 function determineHealthState(pixelData) {
     // Extract RGB values for A, B, C pixels
-    const [pixelA, pixelB, pixelC] = pixelData.map(data => ({
-        r: data[0],
-        g: data[1],
-        b: data[2]
-    }));
+    const [pixelA, pixelB, pixelC] = pixelData;
 
     if (isColorMatch(pixelC, RED_THRESHOLD)) {
         return 'FULL';
