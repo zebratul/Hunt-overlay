@@ -18,8 +18,8 @@ const PIXEL_POSITIONS = [
 ];
 
 // Thresholds for color analysis
-const RED_THRESHOLD = { r: 175, g: 0, b: 0 }; // Example: red color for full health
-const BLACK_THRESHOLD = { r: 4, g: 5, b: 5 }; // Example: black color for no health
+const RED_THRESHOLD = { r: 0, g: 0, b: 110 }; // Example: red color for full health
+const BLACK_THRESHOLD = { r: 10, g: 10, b: 10 }; // Example: black color for no health
 
 let currentHealthState = 'FULL';
 
