@@ -42,7 +42,8 @@ app.post('/analyze', async (req, res) => {
         const pixelData = await Promise.all(pixelPromises);
 
         const healthState = determineHealthState(pixelData);
-
+        console.log('pixelData', pixelData);
+    
         if (healthState !== currentHealthState) {
             currentHealthState = healthState;
             console.log('Health State Updated:', { healthState });
