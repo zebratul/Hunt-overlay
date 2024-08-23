@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -12,20 +11,16 @@ const io = socketIo(server);
 app.use(cors());
 
 
-// Constants for pixel positions (example values, adjust based on game resolution)
+// Constants for pixel positions (A, B, C)
 const PIXEL_POSITIONS = [
-    { x: 100, y: 700 }, // Example pixel positions for health bar
-    { x: 110, y: 700 },
-    { x: 120, y: 700 }
+    { x: 5, y: 0 },   // Pixel A (leftmost pixel)
+    { x: 370, y: 0 }, // Pixel B (middle pixel)
+    { x: 650, y: 0 }  // Pixel C (rightmost pixel)
 ];
 
 // Thresholds for color analysis
-const HEALTH_THRESHOLDS = {
-    FULL: { r: 255, g: 0, b: 0 }, // Example: red color for full health
-    TWO_THIRDS: { r: 255, g: 165, b: 0 }, // Example: orange color for two-thirds health
-    ONE_THIRD: { r: 255, g: 255, b: 0 }, // Example: yellow color for one-third health
-    ZERO: { r: 0, g: 0, b: 0 } // Example: black color for zero health
-};
+const RED_THRESHOLD = { r: 0, g: 0, b: 100 }; // Example: red color for full health
+const BLACK_THRESHOLD = { r: 8, g: 8, b: 8 }; // Example: black color for no health
 
 let currentHealthState = 'FULL';
 
@@ -35,9 +30,8 @@ app.use(bodyParser.raw({ limit: '10mb', type: 'image/png' }));
 app.post('/analyze', async (req, res) => {
     try {
         const buffer = req.body;
-        console.log('received req:', req);
-        
-        // Extract pixels
+
+        // Extract pixels A, B, C
         const pixelPromises = PIXEL_POSITIONS.map(({ x, y }) => 
             sharp(buffer)
                 .extract({ left: x, top: y, width: 1, height: 1 })
@@ -51,8 +45,10 @@ app.post('/analyze', async (req, res) => {
 
         if (healthState !== currentHealthState) {
             currentHealthState = healthState;
-            console.log('overlayUpdate', { healthState });  
+            console.log('Health State Updated:', { healthState });
             io.emit('overlayUpdate', { healthState });
+        } else {
+            console.log('Health State Unchanged:', { healthState });
         }
 
         res.status(200).send('Analysis complete');
@@ -64,28 +60,32 @@ app.post('/analyze', async (req, res) => {
 
 // Function to determine the current health state based on pixel colors
 function determineHealthState(pixelData) {
-    // Extract RGB values from the first pixel as an example
-    const [r, g, b] = pixelData[0];
+    // Extract RGB values for A, B, C pixels
+    const [pixelA, pixelB, pixelC] = pixelData.map(data => ({
+        r: data[0],
+        g: data[1],
+        b: data[2]
+    }));
 
-    if (isColorMatch(r, g, b, HEALTH_THRESHOLDS.FULL)) {
+    if (isColorMatch(pixelC, RED_THRESHOLD)) {
         return 'FULL';
-    } else if (isColorMatch(r, g, b, HEALTH_THRESHOLDS.TWO_THIRDS)) {
-        return 'TWO_THIRDS';
-    } else if (isColorMatch(r, g, b, HEALTH_THRESHOLDS.ONE_THIRD)) {
-        return 'ONE_THIRD';
-    } else if (isColorMatch(r, g, b, HEALTH_THRESHOLDS.ZERO)) {
-        return 'ZERO';
+    } else if (isColorMatch(pixelC, BLACK_THRESHOLD) && isColorMatch(pixelB, RED_THRESHOLD)) {
+        return 'HALF';
+    } else if (isColorMatch(pixelB, BLACK_THRESHOLD) && isColorMatch(pixelA, RED_THRESHOLD)) {
+        return 'CRITICAL';
+    } else if (isColorMatch(pixelA, BLACK_THRESHOLD)) {
+        return 'DEAD';
     } else {
         return currentHealthState; // No change detected
     }
 }
 
 // Helper function to match colors with some tolerance
-function isColorMatch(r, g, b, threshold, tolerance = 10) {
+function isColorMatch(color, threshold, tolerance = 10) {
     return (
-        Math.abs(r - threshold.r) <= tolerance &&
-        Math.abs(g - threshold.g) <= tolerance &&
-        Math.abs(b - threshold.b) <= tolerance
+        Math.abs(color.r - threshold.r) <= tolerance &&
+        Math.abs(color.g - threshold.g) <= tolerance &&
+        Math.abs(color.b - threshold.b) <= tolerance
     );
 }
 
