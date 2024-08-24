@@ -8,7 +8,15 @@ const cors = require('cors');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
-app.use(cors());
+
+const corsOptions = {
+    origin: ['https://hunt-overlay-react.vercel.app'], // Replace with your Vercel app's URL
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
+    credentials: true, // If you need to send cookies or authentication headers
+  };
+  
+  app.use(cors(corsOptions));
 
 // Constants for pixel positions (A, B, C)
 const PIXEL_POSITIONS = [
