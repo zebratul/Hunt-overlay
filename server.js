@@ -44,6 +44,8 @@ app.use(bodyParser.raw({ limit: '10mb', type: 'image/png' }));
 
 // Endpoint to receive screenshots
 app.post('/analyze', async (req, res) => {
+    console.log('received req:', req);
+    
     try {
         const buffer = req.body;
 
