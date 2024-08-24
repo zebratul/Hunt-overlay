@@ -65,7 +65,7 @@ app.post('/analyze', async (req, res) => {
             b: buffer[2]
         }));
 
-        // console.log('pixelData', pixelData );
+        console.log('pixelData', pixelData );
         
         const healthState = determineHealthState(pixelData);
 
