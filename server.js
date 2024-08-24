@@ -35,8 +35,8 @@ const PIXEL_POSITIONS = [
 ];
 
 // Thresholds for color analysis
-const RED_THRESHOLD = { r: 0, g: 0, b: 110 }; // Example: red color for full health
-const BLACK_THRESHOLD = { r: 10, g: 10, b: 10 }; // Example: black color for no health
+const RED_THRESHOLD = { r: 0, g: 0, b: 111 }; // Example: red color for full health
+const BLACK_THRESHOLD = { r: 12, g: 12, b: 12 }; // Example: black color for no health
 
 let currentHealthState = 'FULL';
 
@@ -103,7 +103,7 @@ function determineHealthState(pixelData) {
 }
 
 // Helper function to match colors with some tolerance
-function isColorMatch(color, threshold, tolerance = 10) {
+function isColorMatch(color, threshold, tolerance = 15) {
     return (
         Math.abs(color.r - threshold.r) <= tolerance &&
         Math.abs(color.g - threshold.g) <= tolerance &&
