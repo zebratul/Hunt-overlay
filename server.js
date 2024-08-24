@@ -10,10 +10,10 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 const corsOptions = {
-    origin: ['https://hunt-overlay-react.vercel.app'], // Replace with your Vercel app's URL
+    origin: ['*'], // Replace with Vercel app's URL
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type'],
-    credentials: true, // If you need to send cookies or authentication headers
+    credentials: true, // for cookies or authentication headers
   };
   
   app.use(cors(corsOptions));
