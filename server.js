@@ -40,7 +40,14 @@ const BLACK_THRESHOLD = { r: 12, g: 12, b: 12 }; // Example: black color for no 
 
 let currentHealthState = 'FULL';
 
-app.use(bodyParser.raw({ limit: '10mb', type: 'image/png' }));
+app.use(bodyParser.json());
+
+app.post('/command', (req, res) => {
+    const { command } = req.body;
+    console.log('Received command:', command);
+    io.emit('command', { command });
+    res.status(200).send('Command received');
+});
 
 // Endpoint to receive screenshots
 app.post('/analyze', async (req, res) => {
