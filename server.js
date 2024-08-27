@@ -27,6 +27,9 @@ const io = socketIo(server, {
     },
 });
 
+// Read the CONTROL_ALLOWED environment variable
+const CONTROL_ALLOWED = process.env.CONTROL_ALLOWED === 'TRUE';
+
 // Constants for pixel positions (A, B, C)
 const PIXEL_POSITIONS = [
     { x: 30, y: 0 },   // Pixel A (leftmost pixel)
@@ -45,13 +48,19 @@ app.use(bodyParser.json());
 app.post('/command', (req, res) => {
     const { command } = req.body;
     console.log('Received command:', command);
-    io.emit('command', { command });
-    res.status(200).send('Command received');
+
+    // Emit the command only if CONTROL_ALLOWED is true
+    if (CONTROL_ALLOWED) {
+        io.emit('command', { command });
+        res.status(200).send('Command received and emitted');
+    } else {
+        console.log('Command emission is disabled by CONTROL_ALLOWED');
+        res.status(403).send('Command emission is disabled');
+    }
 });
 
 // Endpoint to receive screenshots
 app.post('/analyze', async (req, res) => {
-   
     try {
         const buffer = req.body;
 
@@ -72,8 +81,6 @@ app.post('/analyze', async (req, res) => {
             b: buffer[2]
         }));
 
-        // console.log('pixelData', pixelData );
-        
         const healthState = determineHealthState(pixelData);
 
         if (healthState !== currentHealthState) {
@@ -123,4 +130,5 @@ const PORT = process.env.PORT || 10000;
 const HOST = '0.0.0.0';
 server.listen(PORT, HOST, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`CONTROL_ALLOWED is set to ${CONTROL_ALLOWED}`);
 });
