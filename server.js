@@ -4,12 +4,28 @@ const socketIo = require('socket.io');
 const sharp = require('sharp');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const { Pool } = require('pg');
+const axios = require('axios');
 
 const app = express();
 const server = http.createServer(app);
 
+// PostgreSQL connection setup
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    },
+});
+
+// Twitch API constants
+const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
+const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
+const TWITCH_REFRESH_TOKEN = process.env.TWITCH_REFRESH_TOKEN;
+
+// CORS setup for Vercel frontend
 const corsOptions = {
-    origin: ['https://hunt-overlay-react.vercel.app'], // Replace with your Vercel app's URL
+    origin: ['https://hunt-overlay-react.vercel.app'],
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type'],
     credentials: true,
@@ -27,7 +43,7 @@ const io = socketIo(server, {
     },
 });
 
-// Read the CONTROL_ALLOWED environment variable
+// Environment variable to control if commands are allowed
 const CONTROL_ALLOWED = process.env.CONTROL_ALLOWED === 'TRUE';
 
 // Constants for pixel positions (A, B, C)
@@ -38,13 +54,63 @@ const PIXEL_POSITIONS = [
 ];
 
 // Thresholds for color analysis
-const RED_THRESHOLD = { r: 0, g: 0, b: 111 }; // Example: red color for full health
-const BLACK_THRESHOLD = { r: 12, g: 12, b: 12 }; // Example: black color for no health
+const RED_THRESHOLD = { r: 0, g: 0, b: 111 };
+const BLACK_THRESHOLD = { r: 12, g: 12, b: 12 };
 
 let currentHealthState = 'FULL';
 
 app.use(bodyParser.json());
 
+// Endpoint to retrieve the Twitch token
+app.get('/twitch-token', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT access_token FROM twitch_tokens ORDER BY id DESC LIMIT 1');
+        const tokenData = result.rows[0];
+        res.json(tokenData);
+    } catch (error) {
+        console.error('Error retrieving Twitch token:', error);
+        res.status(500).send('Error retrieving token');
+    }
+});
+
+// Function to refresh Twitch token
+async function refreshTwitchToken() {
+    try {
+        const response = await axios.post('https://id.twitch.tv/oauth2/token', null, {
+            params: {
+                client_id: TWITCH_CLIENT_ID,
+                client_secret: TWITCH_CLIENT_SECRET,
+                refresh_token: TWITCH_REFRESH_TOKEN,
+                grant_type: 'refresh_token',
+            },
+        });
+
+        const tokenData = response.data;
+
+        // Save the new token to the database
+        await pool.query('INSERT INTO twitch_tokens (access_token) VALUES ($1)', [tokenData.access_token]);
+
+        console.log('New access token saved:', tokenData.access_token);
+
+        return tokenData.access_token;
+    } catch (error) {
+        console.error('Error refreshing access token:', error);
+        throw error;
+    }
+}
+
+// Endpoint to handle token refresh on demand
+app.post('/refresh-token', async (req, res) => {
+    try {
+        const newToken = await refreshTwitchToken();
+        res.json({ access_token: newToken });
+    } catch (error) {
+        console.error('Error refreshing token:', error);
+        res.status(500).send('Error refreshing token');
+    }
+});
+
+// Handle command from frontend to send to local RobotJS app
 app.post('/command', (req, res) => {
     const { command } = req.body;
     console.log('Received command:', command);
@@ -64,7 +130,6 @@ app.post('/analyze', async (req, res) => {
     try {
         const buffer = req.body;
 
-        // Extract pixels A, B, C
         const pixelPromises = PIXEL_POSITIONS.map(({ x, y }) => 
             sharp(buffer)
                 .extract({ left: x, top: y, width: 1, height: 1 })
@@ -74,7 +139,6 @@ app.post('/analyze', async (req, res) => {
 
         const pixelBuffers = await Promise.all(pixelPromises);
 
-        // Convert Buffer data to RGB values
         const pixelData = pixelBuffers.map(buffer => ({
             r: buffer[0],
             g: buffer[1],
@@ -98,9 +162,7 @@ app.post('/analyze', async (req, res) => {
     }
 });
 
-// Function to determine the current health state based on pixel colors
 function determineHealthState(pixelData) {
-    // Extract RGB values for A, B, C pixels
     const [pixelA, pixelB, pixelC] = pixelData;
 
     if (isColorMatch(pixelC, RED_THRESHOLD)) {
@@ -112,11 +174,10 @@ function determineHealthState(pixelData) {
     } else if (isColorMatch(pixelA, BLACK_THRESHOLD)) {
         return 'DEAD';
     } else {
-        return currentHealthState; // No change detected
+        return currentHealthState;
     }
 }
 
-// Helper function to match colors with some tolerance
 function isColorMatch(color, threshold, tolerance = 15) {
     return (
         Math.abs(color.r - threshold.r) <= tolerance &&
@@ -125,7 +186,6 @@ function isColorMatch(color, threshold, tolerance = 15) {
     );
 }
 
-// Start the server
 const PORT = process.env.PORT || 10000;
 const HOST = '0.0.0.0';
 server.listen(PORT, HOST, () => {
