@@ -44,7 +44,7 @@ const io = socketIo(server, {
 });
 
 // Environment variable to control if commands are allowed
-const CONTROL_ALLOWED = TRUE;
+const CONTROL_ALLOWED = true;
 
 // Constants for pixel positions (A, B, C)
 const PIXEL_POSITIONS = [
