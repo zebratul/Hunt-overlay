@@ -88,8 +88,14 @@ async function refreshTwitchToken() {
 
         const tokenData = response.data;
 
+        const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
+
         // Save the new token to the database
-        await pool.query('INSERT INTO twitch_tokens (access_token) VALUES ($1)', [tokenData.access_token]);
+        const insertQuery = `
+        INSERT INTO twitch_tokens (access_token, expires_at)
+        VALUES ($1, $2)`;
+  
+        await pool.query(insertQuery, [tokenData.access_token, expiresAt]);
 
         console.log('New access token saved:', tokenData.access_token);
 
