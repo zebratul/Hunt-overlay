@@ -59,6 +59,7 @@ const BLACK_THRESHOLD = { r: 12, g: 12, b: 12 };
 
 let currentHealthState = 'FULL';
 
+app.use(bodyParser.raw({ limit: '10mb', type: 'image/png' }));
 app.use(bodyParser.json());
 
 // Endpoint to retrieve the Twitch token
