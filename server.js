@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -6,6 +7,7 @@ const cors = require('cors');
 const { fetchTwitchToken, refreshTwitchToken } = require('./twitchTokenService');
 const { analyzeScreenshot } = require('./screenshotAnalyzer');
 const { pool } = require('./dbService');
+const { handleChatCommand } = require('./chatControl');
 
 const app = express();
 const server = http.createServer(app);
@@ -57,13 +59,13 @@ app.post('/refresh-token', async (req, res) => {
 });
 
 // Handle command from frontend to send to local RobotJS app
-app.post('/command', (req, res) => {
-    const { command } = req.body;
-    console.log('Received command:', command);
+app.post('/command', async (req, res) => {
+    const { command, userId } = req.body;
+    console.log('Received command:', command, 'from user:', userId);
 
     if (CONTROL_ALLOWED) {
-        io.emit('command', { command });
-        res.status(200).send('Command received and emitted');
+        const result = await handleChatCommand(command, userId);
+        res.status(200).json(result);
     } else {
         console.log('Command emission is disabled by CONTROL_ALLOWED');
         res.status(403).send('Command emission is disabled');
