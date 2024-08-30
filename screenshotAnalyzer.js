@@ -30,6 +30,8 @@ async function analyzeScreenshot(buffer) {
 
     const healthState = determineHealthState(pixelData);
 
+    currentHealthState = healthState;  // Update the current health state
+
     return healthState;
 }
 
@@ -57,6 +59,8 @@ function isColorMatch(color, threshold, tolerance = 15) {
     );
 }
 
+// Exporting both the analyzeScreenshot function and a way to get the current health state
 module.exports = {
     analyzeScreenshot,
+    getCurrentHealthState: () => currentHealthState,
 };

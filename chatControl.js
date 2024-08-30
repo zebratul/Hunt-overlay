@@ -1,6 +1,6 @@
 // chatControl.js
 const { pool } = require('./dbService');
-const { getHealthState } = require('./healthService'); // Import the function to get the current health state
+const { getCurrentHealthState } = require('./screenshotAnalyzer'); // Import the function to get the current health state
 
 // Cooldown periods in milliseconds
 const REGULAR_COOLDOWN_PERIOD = 2 * 60 * 1000; // 2 minutes for regular users
@@ -37,7 +37,7 @@ async function updateUserRequestTime(userId) {
 
 async function handleChatCommand(command, userId) {
     try {
-        const healthState = await getHealthState(); // Get the current health state
+        const healthState = getCurrentHealthState(); // Get the current health state
 
         // If health is critical, bypass cooldown checks
         if (healthState === 'CRITICAL') {
