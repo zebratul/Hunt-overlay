@@ -6,8 +6,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { fetchTwitchToken, refreshTwitchToken } = require('./twitchTokenService');
 const { analyzeScreenshot } = require('./screenshotAnalyzer');
-const { pool } = require('./dbService');
-const { handleChatCommand } = require('./chatControl'); // Import after passing io
+const { handleChatCommand } = require('./chatControl'); // Import the function from chatControl.js
 
 const app = express();
 const server = http.createServer(app);
@@ -35,9 +34,6 @@ const CONTROL_ALLOWED = true;
 
 app.use(bodyParser.raw({ limit: '10mb', type: 'image/png' }));
 app.use(bodyParser.json());
-
-// Pass the io instance to the chatControl module
-const { handleChatCommand } = require('./chatControl')(io);
 
 // Endpoint to retrieve the Twitch token
 app.get('/twitch-token', async (req, res) => {
@@ -67,7 +63,7 @@ app.post('/command', async (req, res) => {
     console.log('Received command:', command, 'from user:', userName);
 
     if (CONTROL_ALLOWED) {
-        const result = await handleChatCommand(command, userName);
+        const result = await handleChatCommand(command, userName, io); // Pass io to handleChatCommand
         res.status(200).json(result);
     } else {
         console.log('Command emission is disabled by CONTROL_ALLOWED');
