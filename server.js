@@ -72,6 +72,7 @@ app.post('/command', async (req, res) => {
 });
 
 // Endpoint to receive screenshots
+const currentHealthState = 'FULL';
 app.post('/analyze', async (req, res) => {
     try {
         const buffer = req.body;
